@@ -14,6 +14,7 @@
 │   └── requirements.md              # 要件定義書
 ├── sample1.webp                     # 参考画像（.gitignore 対象・変更/削除禁止・HTML から参照しない）
 ├── sample2.jpg                      # 参考画像（.gitignore 対象・変更/削除禁止・HTML から参照しない）
+├── sample3.jpg                      # 参考画像（.gitignore 対象・変更/削除禁止・HTML から参照しない）
 ├── index.html                       # メインの静的 HTML
 ├── css/                             # スタイルシート
 └── js/                              # クライアントサイド JavaScript（WebGL）
@@ -33,14 +34,14 @@
      ```bash
      node --check <対象の.jsファイル>
      ```
-   - HTML / CSS 内の相対パス（CSS/JS の読み込みパス）が実在ファイルと一致し、リンク切れや構文エラーがないこと、および参考画像（`sample1.webp`, `sample2.jpg`）を HTML/CSS/JS から参照していないことを確認する。
+   - HTML / CSS 内の相対パス（CSS/JS の読み込みパス）が実在ファイルと一致し、リンク切れや構文エラーがないこと、および参考画像（`sample1.webp`, `sample2.jpg`, `sample3.jpg`）を HTML/CSS/JS から参照していないことを確認する。
 2. **ブランチ・差分および作業状態の確認（必須）**:
    ```bash
    git branch --show-current
    git status --short
    git diff
    ```
-   - 作業ブランチが `feature/ai-agent-dev` であり、参考ファイル（`sample1.webp`, `sample2.jpg`）が変更・削除・Git 追跡されていないことを確認する。
+   - 作業ブランチが `feature/ai-agent-dev` であり、参考ファイル（`sample1.webp`, `sample2.jpg`, `sample3.jpg`）が変更・削除・Git 追跡されていないことを確認する。
 3. **禁止コマンド（シェル・パッケージ管理・外部通信）**:
    - パッケージのインストール・追加・更新コマンド（`npm install`, `yarn add`, `pip install` 等）は**実行禁止**。
    - 外部ネットワーク通信を伴うコマンド（`curl`, `wget` による外部取得等）は**実行禁止**。
@@ -54,7 +55,7 @@
    - ローカルファイル（CSS・JS）は相対パスで参照し、外部環境に依存しない構成を維持する。
    - JavaScript はモダンな標準構文（`const` / `let`、厳格な比較 `===` 等）を用い、不要なグローバル汚染や XSS につながる安全でない DOM 操作を避ける。
 2. **変更禁止ファイル・環境制約・著作権配慮**:
-   - **参考ファイルの変更・削除禁止**: `sample1.webp` および `sample2.jpg` はいかなる理由でも変更・上書き・削除しないこと（`.gitignore` 対象とし、HTML 等からも参照しない）。
+   - **参考ファイルの変更・削除禁止**: `sample1.webp`, `sample2.jpg` および `sample3.jpg` はいかなる理由でも変更・上書き・削除しないこと（`.gitignore` 対象とし、HTML 等からも参照しない）。
    - **著作権配慮**: 既存作品の固有名詞・キャラクター名・ロゴ等をソースコード・コメント・`README.md`・`docs/` に記載しないこと。
    - **依存パッケージ・外部通信の禁止**: 外部パッケージマネージャによる依存追加や外部通信を伴う処理・コマンドを勝手に追加・実行しないこと。
 3. **ドキュメント・表示整合性**:
