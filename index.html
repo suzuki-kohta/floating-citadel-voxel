@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="雲海の上空に浮かぶ巨大な浮遊城を純粋なWebGL 3Dボクセルアートで描くフルスクリーン動く壁紙">
+  <title>雲海に浮かぶ浮遊城 — 3Dボクセル壁紙</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+  <main class="viewport">
+    <canvas id="scene-canvas" aria-label="雲海に浮かぶ浮遊城の3Dボクセルアニメーション"></canvas>
+
+    <button
+      id="settings-hotspot"
+      type="button"
+      class="settings-hotspot"
+      aria-label="設定パネルを開く"
+      aria-controls="settings-panel"
+      aria-expanded="false"
+    ></button>
+
+    <aside id="settings-panel" class="settings-panel" aria-label="壁紙設定" hidden>
+      <header class="panel-header">
+        <h1 class="panel-title">壁紙設定</h1>
+        <button
+          id="close-settings-btn"
+          type="button"
+          class="icon-btn"
+          aria-label="設定を閉じる"
+        >×</button>
+      </header>
+
+      <div class="panel-body">
+        <div class="control-group">
+          <label for="time-mode-select" class="control-label">時間帯モード</label>
+          <select id="time-mode-select" class="control-select">
+            <option value="auto" selected>自動サイクル</option>
+            <option value="realtime">現在時刻連動</option>
+            <option value="dawn">朝</option>
+            <option value="day">昼</option>
+            <option value="sunset">夕焼け</option>
+            <option value="night">夜</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="quality-select" class="control-label">画質・省電力</label>
+          <select id="quality-select" class="control-select">
+            <option value="high">高画質</option>
+            <option value="medium" selected>標準</option>
+            <option value="eco">省電力</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <button
+            id="pause-toggle-btn"
+            type="button"
+            class="action-btn"
+            aria-pressed="false"
+          >一時停止</button>
+        </div>
+
+        <p id="status-readout" class="status-readout" aria-live="polite"></p>
+      </div>
+
+      <footer class="panel-footer">
+        <p class="panel-hint">
+          <kbd>H</kbd> キーまたは右下隅クリックで開閉 / <kbd>Esc</kbd> で閉じる
+        </p>
+      </footer>
+    </aside>
+
+    <section id="fallback-message" class="fallback-message" role="alert" hidden>
+      <div class="fallback-card">
+        <h2 class="fallback-title">3Dシーンを表示できません</h2>
+        <p class="fallback-description">
+          お使いのブラウザまたは環境では WebGL が利用できないため、3Dボクセル壁紙を描画できませんでした。
+          ハードウェアアクセラレーションが有効な最新ブラウザでお試しください。
+        </p>
+        <p id="fallback-reason" class="fallback-reason"></p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
