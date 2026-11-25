@@ -745,6 +745,10 @@ function addMountainsAndValley(builder, rng, detailLevel) {
   }
 }
 
+function getCliffRowMaxX(z) {
+  return Math.min(96, Math.max(40, Math.ceil(28 + (68 - z) * 1.15)));
+}
+
 function getCliffSurfaceY(x, z) {
   const n = fbm2D(x * 0.08 + 2.4, z * 0.08 + 5.1, 3);
   const edgeSlope = clamp((x - 19.0) / 16.0, 0, 1);
@@ -755,7 +759,7 @@ function getCliffSurfaceY(x, z) {
 function isStreamCell(x, z) {
   // Winding small stream running across the cliff plateau toward the waterfall lip at (21.0, 14.0)
   const targetZ = 14.0 + Math.sin((x - 21.0) * 0.16) * 2.0 + (x - 21.0) * 0.14;
-  return x >= 20.0 && x <= 54.0 && Math.abs(z - targetZ) < 1.9;
+  return x >= 20.0 && x <= 96.0 && Math.abs(z - targetZ) < 1.9;
 }
 
 function addForegroundCliff(builder, rng) {
@@ -773,9 +777,11 @@ function addForegroundCliff(builder, rng) {
   ];
   const streamColor = [0.22, 0.58, 0.78];
 
-  // Build solid stepped rocky cliff in front-right: X in [14, 58], Z in [4, 34]
-  for (let z = 4; z <= 34; z += 2) {
-    for (let x = 14; x <= 58; x += 2) {
+  // Build solid stepped rocky cliff extending past the bottom-right viewport edge: Z in [4, 64]
+  const maxZ = 64;
+  for (let z = 4; z <= maxZ; z += 2) {
+    const rowMaxX = getCliffRowMaxX(z);
+    for (let x = 10; x <= rowMaxX; x += 2) {
       // Organic rocky coastline / cliff edge shape
       const edgeNoise = fbm2D(x * 0.11 + 8.1, z * 0.11 + 1.9, 3) * 6.0;
       const distFromEdge = (x - 19.6) + (z - 12.0) * 0.22 - edgeNoise * 0.75;
@@ -795,21 +801,31 @@ function addForegroundCliff(builder, rng) {
         builder.add(x, topY, z, 2.15, 1.3, 2.15, gc[0], gc[1], gc[2], VOXEL_TYPE.STATIC);
       }
 
-      // Cliff face vertical strata on exposed perimeter or front-left face
-      const isPerimeter = distFromEdge < 4.8 || z <= 8 || x <= 25;
+      // Cliff face vertical strata on exposed perimeter, front camera-facing wall, or right boundary
+      const isPerimeter =
+        distFromEdge < 5.2 ||
+        z <= 8 ||
+        z >= maxZ - 4 ||
+        (z <= 22 && x <= 25) ||
+        x >= rowMaxX - 4;
+      const baseTop = isStream ? topY - 0.78 : topY - 0.50;
       if (isPerimeter) {
-        const layers = 10;
+        const layers = 12;
+        const layerStep = 3.4;
+        const layerHeight = 3.8;
+        const isFrontFace = z >= maxZ - 2;
         for (let k = 1; k <= layers; k += 1) {
-          const ly = topY - k * 3.6;
-          const overhang = Math.sin(k * 0.9 + x * 0.3) * 0.45;
+          const ly = baseTop - layerHeight * 0.5 - (k - 1) * layerStep;
+          const overhangX = Math.sin(k * 0.9 + x * 0.3) * 0.45;
+          const overhangZ = isFrontFace ? Math.sin(k * 0.85 + x * 0.28) * 0.25 : 0;
           const rc = jitterColor(rockColors[(k + Math.floor(x)) % rockColors.length], 0.045, rng);
           builder.add(
-            x + overhang,
+            x + overhangX,
             ly,
-            z,
-            2.35,
-            3.8,
-            2.35,
+            z + overhangZ,
+            2.45,
+            layerHeight,
+            isFrontFace ? 2.55 : 2.45,
             rc[0],
             rc[1],
             rc[2],
@@ -817,9 +833,12 @@ function addForegroundCliff(builder, rng) {
           );
         }
       } else {
-        // Interior sub-block support
+        // Interior sub-block support extending cleanly down to the valley floor
+        const bottomY = -30.0;
+        const subH = Math.max(8.0, baseTop - bottomY);
+        const subCenterY = (baseTop + bottomY) * 0.5;
         const rc = jitterColor(rockColors[0], 0.04, rng);
-        builder.add(x, topY - 4.5, z, 2.2, 8.0, 2.2, rc[0], rc[1], rc[2], VOXEL_TYPE.STATIC);
+        builder.add(x, subCenterY, z, 2.35, subH, 2.35, rc[0], rc[1], rc[2], VOXEL_TYPE.STATIC);
       }
     }
   }
@@ -850,8 +869,9 @@ function addGrass(builder, rng, count) {
 
   while (added < count && attempts < maxAttempts) {
     attempts += 1;
-    const x = 18.0 + rng() * 38.0;
-    const z = 5.0 + rng() * 28.0;
+    const z = 5.0 + rng() * 57.0;
+    const rowMaxX = getCliffRowMaxX(z);
+    const x = 10.0 + rng() * Math.max(1.0, rowMaxX - 11.0);
     const edgeNoise = fbm2D(x * 0.11 + 8.1, z * 0.11 + 1.9, 3) * 6.0;
     const distFromEdge = (x - 19.6) + (z - 12.0) * 0.22 - edgeNoise * 0.75;
     if (distFromEdge < 0.6 || isStreamCell(x, z)) {
@@ -1047,14 +1067,14 @@ export function buildVoxelScene() {
   addForegroundCliff(builder, rng);
   addCloudClusters(builder, rng, cloudSpanX, [14, 18, 12]);
   addWaterfall(builder, rng);
-  addGrass(builder, rng, 560);
+  addGrass(builder, rng, 820);
   addMist(builder, rng, 140);
   addParticles(builder, rng, 80);
   const ecoCount = builder.count();
 
   // --- Tier 2: MEDIUM (Richer Clouds, Grass, Mist, Valley Detail & Light Particles) ---
   addCloudClusters(builder, rng, cloudSpanX, [8, 10, 8]);
-  addGrass(builder, rng, 640);
+  addGrass(builder, rng, 920);
   addMist(builder, rng, 160);
   addParticles(builder, rng, 240);
   addMountainsAndValley(builder, rng, 1);
@@ -1062,7 +1082,7 @@ export function buildVoxelScene() {
 
   // --- Tier 3: HIGH (Maximum Detail Density) ---
   addCloudClusters(builder, rng, cloudSpanX, [6, 8, 6]);
-  addGrass(builder, rng, 520);
+  addGrass(builder, rng, 760);
   addMist(builder, rng, 140);
   addParticles(builder, rng, 340);
   addMountainsAndValley(builder, rng, 2);

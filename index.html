@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="雲海の上空に浮かぶ巨大な浮遊城を純粋なWebGL 3Dボクセルアートで描くフルスクリーン動く壁紙">
   <title>雲海に浮かぶ浮遊城 — 3Dボクセル壁紙</title>
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=3">
 </head>
 <body>
   <main class="viewport">
@@ -33,24 +33,84 @@
 
       <div class="panel-body">
         <div class="control-group">
-          <label for="time-mode-select" class="control-label">時間帯モード</label>
-          <select id="time-mode-select" class="control-select">
-            <option value="auto" selected>自動サイクル</option>
-            <option value="realtime">現在時刻連動</option>
-            <option value="dawn">朝</option>
-            <option value="day">昼</option>
-            <option value="sunset">夕焼け</option>
-            <option value="night">夜</option>
-          </select>
+          <span id="time-mode-label" class="control-label">時間帯モード</span>
+          <div class="custom-select" data-select="time-mode">
+            <button
+              type="button"
+              id="time-mode-trigger"
+              class="select-trigger"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="time-mode-listbox"
+              aria-labelledby="time-mode-label time-mode-value"
+            >
+              <span id="time-mode-value" class="select-value">自動サイクル</span>
+              <svg
+                class="select-chevron"
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M1.5 1.75L6 6.25L10.5 1.75"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <ul id="time-mode-listbox" class="select-options" role="listbox" aria-labelledby="time-mode-label" hidden>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="auto" aria-selected="true">自動サイクル</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="realtime" aria-selected="false">現在時刻連動</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="dawn" aria-selected="false">朝</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="day" aria-selected="false">昼</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="sunset" aria-selected="false">夕焼け</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="night" aria-selected="false">夜</button></li>
+            </ul>
+          </div>
         </div>
 
         <div class="control-group">
-          <label for="quality-select" class="control-label">画質・省電力</label>
-          <select id="quality-select" class="control-select">
-            <option value="high">高画質</option>
-            <option value="medium" selected>標準</option>
-            <option value="eco">省電力</option>
-          </select>
+          <span id="quality-label" class="control-label">画質・省電力</span>
+          <div class="custom-select" data-select="quality">
+            <button
+              type="button"
+              id="quality-trigger"
+              class="select-trigger"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="quality-listbox"
+              aria-labelledby="quality-label quality-value"
+            >
+              <span id="quality-value" class="select-value">標準</span>
+              <svg
+                class="select-chevron"
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="M1.5 1.75L6 6.25L10.5 1.75"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <ul id="quality-listbox" class="select-options" role="listbox" aria-labelledby="quality-label" hidden>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="high" aria-selected="false">高画質</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="medium" aria-selected="true">標準</button></li>
+              <li role="presentation"><button type="button" class="select-option" role="option" data-value="eco" aria-selected="false">省電力</button></li>
+            </ul>
+          </div>
         </div>
 
         <div class="control-group">
@@ -84,6 +144,6 @@
     </section>
   </main>
 
-  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/main.js?v=3"></script>
 </body>
 </html>

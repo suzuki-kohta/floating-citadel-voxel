@@ -1,5 +1,5 @@
 import { lerp, smoothstep, lerpVec3, normalizeVec3 } from './math.js';
-import { buildVoxelScene } from './voxel-scene.js';
+import { buildVoxelScene } from './voxel-scene.js?v=3';
 import { createRenderer } from './renderer.js';
 
 const STORAGE_KEY = 'floating-citadel-wallpaper-settings-v1';
@@ -293,12 +293,155 @@ function isEditableElement(element) {
   );
 }
 
+function createCustomSelect({ container, trigger, valueEl, listbox, onChange, onBeforeOpen }) {
+  if (!container || !trigger || !valueEl || !listbox) {
+    return null;
+  }
+
+  const options = Array.from(listbox.querySelectorAll('.select-option[role="option"]'));
+  const initialOption =
+    options.find((opt) => opt.getAttribute('aria-selected') === 'true') || options[0] || null;
+  let currentValue =
+    initialOption && typeof initialOption.dataset.value === 'string'
+      ? initialOption.dataset.value
+      : '';
+  let isOpen = false;
+
+  function getSelectedIndex() {
+    const idx = options.findIndex((opt) => opt.dataset.value === currentValue);
+    return idx >= 0 ? idx : 0;
+  }
+
+  function setOpen(open, { focusOption = false, focusIndex = -1, returnFocus = false } = {}) {
+    if (open) {
+      if (!isOpen && typeof onBeforeOpen === 'function') {
+        onBeforeOpen();
+      }
+      isOpen = true;
+      listbox.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      if (focusOption && options.length > 0) {
+        const targetIndex =
+          focusIndex >= 0 && focusIndex < options.length ? focusIndex : getSelectedIndex();
+        options[targetIndex].focus();
+      }
+      return;
+    }
+
+    const wasOpen = isOpen;
+    isOpen = false;
+    listbox.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    if (returnFocus && wasOpen) {
+      trigger.focus();
+    }
+  }
+
+  function setValue(value) {
+    const matched = options.find((opt) => opt.dataset.value === value);
+    if (!matched) {
+      return false;
+    }
+    currentValue = value;
+    valueEl.textContent = matched.textContent;
+    for (const opt of options) {
+      opt.setAttribute('aria-selected', opt === matched ? 'true' : 'false');
+    }
+    return true;
+  }
+
+  function selectOption(opt) {
+    const nextValue = opt.dataset.value;
+    if (typeof nextValue !== 'string') {
+      return;
+    }
+    const changed = nextValue !== currentValue;
+    setValue(nextValue);
+    if (changed && typeof onChange === 'function') {
+      onChange(nextValue);
+    }
+    setOpen(false, { returnFocus: true });
+  }
+
+  trigger.addEventListener('click', () => {
+    setOpen(!isOpen);
+  });
+
+  trigger.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setOpen(true, { focusOption: true, focusIndex: getSelectedIndex() });
+    }
+  });
+
+  for (const opt of options) {
+    opt.addEventListener('click', () => {
+      selectOption(opt);
+    });
+  }
+
+  listbox.addEventListener('keydown', (event) => {
+    if (options.length === 0) {
+      return;
+    }
+    const currentIndex = options.indexOf(document.activeElement);
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % options.length : 0;
+      options[nextIndex].focus();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      const prevIndex =
+        currentIndex >= 0 ? (currentIndex - 1 + options.length) % options.length : options.length - 1;
+      options[prevIndex].focus();
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      options[0].focus();
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      options[options.length - 1].focus();
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (currentIndex >= 0) {
+        event.preventDefault();
+        selectOption(options[currentIndex]);
+      }
+    }
+  });
+
+  return {
+    setValue,
+    open: (opts) => setOpen(true, opts),
+    close: (opts) => setOpen(false, opts),
+    isOpen: () => isOpen,
+    contains: (target) => container.contains(target instanceof Node ? target : null),
+  };
+}
+
 function init() {
   const canvas = document.getElementById('scene-canvas');
   const hotspotBtn = document.getElementById('settings-hotspot');
   const settingsPanel = document.getElementById('settings-panel');
-  const timeModeSelect = document.getElementById('time-mode-select');
-  const qualitySelect = document.getElementById('quality-select');
+  const timeModeContainer = document.querySelector('[data-select="time-mode"]');
+  const timeModeTrigger = document.getElementById('time-mode-trigger');
+  const timeModeValue = document.getElementById('time-mode-value');
+  const timeModeListbox = document.getElementById('time-mode-listbox');
+  const qualityContainer = document.querySelector('[data-select="quality"]');
+  const qualityTrigger = document.getElementById('quality-trigger');
+  const qualityValue = document.getElementById('quality-value');
+  const qualityListbox = document.getElementById('quality-listbox');
   const pauseToggleBtn = document.getElementById('pause-toggle-btn');
   const closeSettingsBtn = document.getElementById('close-settings-btn');
   const statusReadout = document.getElementById('status-readout');
@@ -335,7 +478,62 @@ function init() {
   let lastDrawTime = 0;
   let lastStatusText = '';
 
+  const customSelects = [];
+
+  function closeOpenSelects(options = {}) {
+    let closedAny = false;
+    for (const selectCtrl of customSelects) {
+      if (selectCtrl.isOpen()) {
+        selectCtrl.close(options);
+        closedAny = true;
+      }
+    }
+    return closedAny;
+  }
+
+  const timeModeSelect = createCustomSelect({
+    container: timeModeContainer,
+    trigger: timeModeTrigger,
+    valueEl: timeModeValue,
+    listbox: timeModeListbox,
+    onBeforeOpen: () => closeOpenSelects(),
+    onChange: (nextValue) => {
+      if (VALID_TIME_MODES.has(nextValue)) {
+        settings.timeMode = nextValue;
+        saveSettings(settings);
+        renderSingleFrame();
+      }
+    },
+  });
+
+  const qualitySelect = createCustomSelect({
+    container: qualityContainer,
+    trigger: qualityTrigger,
+    valueEl: qualityValue,
+    listbox: qualityListbox,
+    onBeforeOpen: () => closeOpenSelects(),
+    onChange: (nextValue) => {
+      if (VALID_QUALITIES.has(nextValue)) {
+        settings.quality = nextValue;
+        saveSettings(settings);
+        renderer.setQuality(settings.quality);
+        applyViewportSize();
+        renderSingleFrame();
+      }
+    },
+  });
+
+  if (timeModeSelect) {
+    customSelects.push(timeModeSelect);
+  }
+  if (qualitySelect) {
+    customSelects.push(qualitySelect);
+  }
+
   function setPanelOpen(open) {
+    if (!open) {
+      closeOpenSelects();
+    }
     if (settingsPanel) {
       settingsPanel.hidden = !open;
     }
@@ -366,10 +564,10 @@ function init() {
 
   function syncControlsFromSettings() {
     if (timeModeSelect) {
-      timeModeSelect.value = settings.timeMode;
+      timeModeSelect.setValue(settings.timeMode);
     }
     if (qualitySelect) {
-      qualitySelect.value = settings.quality;
+      qualitySelect.setValue(settings.quality);
     }
     if (pauseToggleBtn) {
       pauseToggleBtn.setAttribute('aria-pressed', settings.paused ? 'true' : 'false');
@@ -458,28 +656,6 @@ function init() {
     });
   }
 
-  if (timeModeSelect) {
-    timeModeSelect.addEventListener('change', () => {
-      if (VALID_TIME_MODES.has(timeModeSelect.value)) {
-        settings.timeMode = timeModeSelect.value;
-        saveSettings(settings);
-        renderSingleFrame();
-      }
-    });
-  }
-
-  if (qualitySelect) {
-    qualitySelect.addEventListener('change', () => {
-      if (VALID_QUALITIES.has(qualitySelect.value)) {
-        settings.quality = qualitySelect.value;
-        saveSettings(settings);
-        renderer.setQuality(settings.quality);
-        applyViewportSize();
-        renderSingleFrame();
-      }
-    });
-  }
-
   if (pauseToggleBtn) {
     pauseToggleBtn.addEventListener('click', () => {
       settings.paused = !settings.paused;
@@ -495,8 +671,21 @@ function init() {
     });
   }
 
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    for (const selectCtrl of customSelects) {
+      if (selectCtrl.isOpen() && !selectCtrl.contains(target)) {
+        selectCtrl.close();
+      }
+    }
+  });
+
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
+      if (closeOpenSelects({ returnFocus: true })) {
+        event.preventDefault();
+        return;
+      }
       if (settingsPanel && !settingsPanel.hidden) {
         setPanelOpen(false);
       }
